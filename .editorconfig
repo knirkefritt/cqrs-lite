@@ -1,0 +1,11 @@
+# noinspection EditorConfigKeyCorrectness
+[*.{kt,kts}]
+ktlint_code_style = intellij_idea
+ktlint_standard_no-wildcard-imports = disabled
+max_line_length = 120
+
+# noinspection EditorConfigKeyCorrectness
+[**/test/**.{kt,kts}]
+ktlint_code_style = intellij_idea
+ktlint_ignore_back_ticked_identifier=true
+max_line_length = 200
