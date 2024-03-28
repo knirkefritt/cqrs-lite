@@ -1,0 +1,36 @@
+scheduling:
+  enabled: false
+
+spring:
+  datasource:
+    default:
+      hikari:
+        jdbc-url: "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}"
+        driver-class-name: org.postgresql.Driver
+        username: test_user
+        password: test_user
+
+    flyway:
+      hikari:
+        jdbc-url: "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}"
+        driver-class-name: org.postgresql.Driver
+        username: test_user
+        password: test_user
+
+  flyway:
+    placeholders:
+      db_user: "test_user"
+
+cqrs:
+  serialization:
+    map:
+      cqrslite.spring.testevents.SomethingSimpleJustHappened: something_simple_just_happened
+      cqrslite.spring.testevents.SomeEventWithAMap: some_event_with_a_map
+      cqrslite.spring.testevents.SomeEventWithLocalDate: some_event_with_a_local_date
+
+  lookup:
+    schema: write
+    mappingTable: external_id_lookup
+    map:
+      cqrslite.spring.testaggregates.Hippo: hippo
+      cqrslite.spring.testaggregates.Giraffe: giraffe
