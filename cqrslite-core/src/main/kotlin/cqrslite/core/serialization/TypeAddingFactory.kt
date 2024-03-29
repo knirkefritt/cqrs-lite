@@ -13,7 +13,9 @@ import com.google.gson.stream.JsonWriter
 /**
  * Adds a $type property to the json-document for classes derived from the specified class [clazz]
  * @param clazz the base class for all classes which should be serialized with $type information
- * @param namingConvention a map of serialized names for each class that should be decorated with $type information, note: if the serialized class is not in the map, $type property will not be added
+ * @param namingConvention a map of serialized names for each class that should be decorated
+ *                         with $type information, note: if the serialized class is not in the map,
+ *                         $type property will not be added
  */
 class TypeAddingFactory(
     private val clazz: Class<*>,

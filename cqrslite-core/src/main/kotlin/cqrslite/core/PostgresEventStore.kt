@@ -23,12 +23,12 @@ class PostgresEventStore(
         try {
             record.batchInsert(events) { e ->
                 this[record.id] =
-                    e.id ?: throw Error("You should never get to the event store without having an id, this is a bug")
+                    e.id ?: throw ShouldBeAssignedByAggregateRoot()
                 this[record.version] = e.version
-                    ?: throw Error("You should never get to the event store without having an version, this is a bug")
+                    ?: throw ShouldBeAssignedByAggregateRoot()
                 this[record.payload] = e
                 this[record.timestamp] = e.timestamp
-                    ?: throw Error("You should never get to the event store without having an timestamp, this is a bug")
+                    ?: throw ShouldBeAssignedByAggregateRoot()
             }
             outbox.save(events)
             handlerHub.runEventHandlers(

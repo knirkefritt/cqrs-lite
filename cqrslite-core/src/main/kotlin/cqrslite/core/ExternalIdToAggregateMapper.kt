@@ -75,6 +75,11 @@ class ExternalIdToAggregateMapper(
         }
     }
 
+    private enum class Result {
+        Mapped,
+        AlreadyMappedToDifferentAggregate,
+    }
+
     suspend fun <T : AggregateRoot> mapToAggregate(externalId: String, aggregateId: UUID, clazz: Class<T>): Boolean {
         val aggregateType =
             cfg.map[clazz] ?: throw ConfigurationException("Missing aggregate ${clazz.name} from config map")
@@ -86,7 +91,8 @@ class ExternalIdToAggregateMapper(
             Pair(VarCharColumnType(), externalId),
             Pair(VarCharColumnType(), aggregateType),
         )
-        return newSuspendedTransaction {
+
+        val result = newSuspendedTransaction {
             try {
                 val id = exec(
                     insertNewAggregateOrGetExistingSql,
@@ -96,7 +102,7 @@ class ExternalIdToAggregateMapper(
                 )
                 when (id) {
                     aggregateId -> {
-                        true
+                        Result.Mapped
                     }
 
                     null -> {
@@ -104,17 +110,21 @@ class ExternalIdToAggregateMapper(
                     }
 
                     else -> {
-                        throw AlreadyMappedToDifferentAggregate()
+                        Result.AlreadyMappedToDifferentAggregate
                     }
                 }
-            } catch (e: NoResult) {
+            } catch (_: NoResult) {
                 val existingId = getIdOfExistingAggregate(externalId, clazz)
                 if (existingId == aggregateId) {
-                    true
+                    Result.Mapped
                 } else {
-                    throw AlreadyMappedToDifferentAggregate()
+                    Result.AlreadyMappedToDifferentAggregate
                 }
             }
+        }
+        return when (result) {
+            Result.Mapped -> true
+            Result.AlreadyMappedToDifferentAggregate -> throw AlreadyMappedToDifferentAggregate()
         }
     }
 
@@ -133,9 +143,9 @@ class ExternalIdToAggregateMapper(
                 if (existingAggregateId != null) {
                     session.find(existingAggregateId, clazz = clazz)
                 } else {
-                    throw Error("This should not occur")
+                    throw RuntimeException("This should not occur")
                 }
-            } catch (ex: NoResult) {
+            } catch (_: NoResult) {
                 null
             }
         }
@@ -156,8 +166,7 @@ class ExternalIdToAggregateMapper(
 
         var aggregate = session.find(existingAggregateId, clazz = clazz)
         if (aggregate == null) {
-            aggregate = clazz.getConstructor(UUID::class.java).newInstance(existingAggregateId)
-                ?: throw Exception("Should not happen")
+            aggregate = clazz.getConstructor(UUID::class.java).newInstance(existingAggregateId) as T
             session.add(aggregate)
         }
         return aggregate

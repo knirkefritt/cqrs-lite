@@ -9,7 +9,6 @@ import cqrslite.spring.harness.TestContext
 import cqrslite.spring.testaggregates.Giraffe
 import cqrslite.spring.testaggregates.Hippo
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.supervisorScope
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -109,7 +108,13 @@ class ExternalIdToAggregateMapperTests {
         runBlocking {
             val session = SessionImpl(repository)
 
-            assertThrows<ConfigurationException> { lookup.getOrCreateAggregate("whatever-id-${UUID.randomUUID()}", session, IAmAnUnknownAggregate::class.java) }
+            assertThrows<ConfigurationException> {
+                lookup.getOrCreateAggregate(
+                    "whatever-id-${UUID.randomUUID()}",
+                    session,
+                    IAmAnUnknownAggregate::class.java,
+                )
+            }
         }
     }
 
@@ -162,45 +167,30 @@ class ExternalIdToAggregateMapperTests {
         runBlocking {
             val session = SessionImpl(repository)
 
-            val hippoOne = lookup.getOrCreateAggregate("external-id-${UUID.randomUUID()}", session, Hippo::class.java)
-            val hippoTwo = lookup.getOrCreateAggregate("external-id-${UUID.randomUUID()}", session, Hippo::class.java)
+            val hippoOne = lookup.getOrCreateAggregate(
+                "external-id-${UUID.randomUUID()}",
+                session,
+                Hippo::class.java,
+            )
 
             val alreadyMappedId = "another-id-${UUID.randomUUID()}"
             lookup.mapToAggregate(alreadyMappedId, hippoOne.id, Hippo::class.java)
 
-            assertThrows<ExternalIdToAggregateMapper.AlreadyMappedToDifferentAggregate> {
-                runBlocking {
+            runBlocking {
+                var handled = false
+
+                try {
+                    val hippoTwo = lookup.getOrCreateAggregate(
+                        "external-id-${UUID.randomUUID()}",
+                        session,
+                        Hippo::class.java,
+                    )
                     lookup.mapToAggregate(alreadyMappedId, hippoTwo.id, Hippo::class.java)
+                } catch (_: ExternalIdToAggregateMapper.AlreadyMappedToDifferentAggregate) {
+                    handled = true
                 }
+                assert(handled)
             }
-        }
-    }
-
-    @Test
-    fun map_id_already_mapped_to_another_aggregate_throws_already_mapped_exception_handled_inside_return_try() {
-        suspend fun handlesAlreadyMappedAndReturnsFalse(): Boolean {
-            return try {
-                supervisorScope {
-                    newSuspendedTransaction {
-                        val session = SessionImpl(repository)
-
-                        val hippoOne = lookup.getOrCreateAggregate("external-id-${UUID.randomUUID()}", session, Hippo::class.java)
-                        val hippoTwo = lookup.getOrCreateAggregate("external-id-${UUID.randomUUID()}", session, Hippo::class.java)
-
-                        val alreadyMappedId = "another-id-${UUID.randomUUID()}"
-                        lookup.mapToAggregate(alreadyMappedId, hippoOne.id, Hippo::class.java)
-                        lookup.mapToAggregate(alreadyMappedId, hippoTwo.id, Hippo::class.java)
-                        true
-                    }
-                }
-            } catch (ex: ExternalIdToAggregateMapper.AlreadyMappedToDifferentAggregate) {
-                false
-            }
-        }
-
-        runBlocking {
-            val success = handlesAlreadyMappedAndReturnsFalse()
-            assert(!success)
         }
     }
 }

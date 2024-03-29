@@ -38,7 +38,7 @@ class PostgresOutbox(
     override suspend fun save(events: Iterable<Event>) {
         outboxRecord.batchInsert(events) { e ->
             this[outboxRecord.key] = e.id
-                ?: throw Error("You should never get to the event store without having an id, this is a bug")
+                ?: throw ShouldBeAssignedByAggregateRoot()
             this[outboxRecord.payload] = e
         }
     }

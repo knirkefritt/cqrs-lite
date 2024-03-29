@@ -25,7 +25,7 @@ class Repository(private val eventStore: EventStore) {
         }
 
         val aggregate = AggregateFactory.createAggregate(clazz)
-        aggregate.loadFromHistory(events)
+        AggregateRoot.loadFromHistory(aggregate, events)
         return aggregate
     }
 
