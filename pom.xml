@@ -8,11 +8,12 @@
     <packaging>pom</packaging>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
         <kotlin.version>1.9.23</kotlin.version>
         <kotlinx.version>1.7.3</kotlinx.version>
         <kotlin.compiler.jvmTarget>17</kotlin.compiler.jvmTarget>
 
-        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <ktlint-maven-plugin.version>3.2.0</ktlint-maven-plugin.version>
 
         <spring-cloud.version>2023.0.0</spring-cloud.version>
@@ -199,14 +200,6 @@
                         <phase>validate</phase>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>${maven-resources-plugin.version}</version>
-                <configuration>
-                    <encoding>UTF-8</encoding>
-                </configuration>
             </plugin>
         </plugins>
     </build>
