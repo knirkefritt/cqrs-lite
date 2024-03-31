@@ -2,18 +2,18 @@ package cqrslite.core
 
 import com.google.gson.reflect.TypeToken
 import cqrslite.core.config.EventSerializationMapConfig
-import cqrslite.core.serialization.EventSerializer
+import cqrslite.core.serialization.EventSerializerImpl
 import cqrslite.core.serialization.MissingMappingException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.Instant
 import java.util.*
 
-class EventSerializerTests {
+class EventSerializerImplTests {
 
     @Test
     fun `serialize then deserialize parameterized type, expects deserialized type to match serialized type`() {
-        val serializer = EventSerializer(
+        val serializer = EventSerializerImpl(
             cfg = EventSerializationMapConfig(
                 map = mapOf(SomethingSimpleJustHappened::class.java to "foo"),
             ),
@@ -29,7 +29,7 @@ class EventSerializerTests {
 
     @Test
     fun `registered event, get name of event`() {
-        val serializer = EventSerializer(
+        val serializer = EventSerializerImpl(
             cfg = EventSerializationMapConfig(
                 map = mapOf(SomethingSimpleJustHappened::class.java to "foo"),
             ),
@@ -40,7 +40,7 @@ class EventSerializerTests {
 
     @Test
     fun `not registered event, throws error`() {
-        val serializer = EventSerializer(
+        val serializer = EventSerializerImpl(
             cfg = EventSerializationMapConfig(map = mapOf()),
         )
 
