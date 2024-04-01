@@ -4,7 +4,7 @@ CREATE TABLE write.event_stream (
 	id uuid NOT NULL,
 	version smallint NOT NULL,
 	payload jsonb NOT NULL,
-	timeStamp timestamp NOT NULL,
+	timestamp timestamp NOT NULL,
 	CONSTRAINT event_stream_pkey PRIMARY KEY(Id,Version)
 );
 
