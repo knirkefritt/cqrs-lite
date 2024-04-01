@@ -6,7 +6,11 @@ interface EventSerializer {
     fun <T> deserialize(json: String, clazz: Class<T>): T
 }
 
-class NoOpEventSerializer : EventSerializer {
+/**
+ * Throws NoEventsConfiguredException when used, this is just to postpone
+ * any missing configuration errors until actual usage
+ */
+class SerializerThrowingOnFirstUse : EventSerializer {
     override fun <T> serialize(event: T): String {
         throw NoEventsConfiguredException("serialize")
     }

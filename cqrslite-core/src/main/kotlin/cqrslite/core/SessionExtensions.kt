@@ -8,7 +8,7 @@ import kotlin.coroutines.CoroutineContext
 suspend fun <T : AggregateRoot> Session.find(id: UUID, expectedVersion: Int? = null, clazz: Class<T>): T? {
     return try {
         this.get(id, expectedVersion, clazz)
-    } catch (_: Repository.AggregateNotFoundException) {
+    } catch (_: AggregateNotFoundException) {
         null
     }
 }

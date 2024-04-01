@@ -6,14 +6,15 @@ import cqrslite.core.config.ExternalIdToAggregateMapperConfig
 import cqrslite.core.messaging.HandlerHub
 import cqrslite.core.serialization.EventSerializer
 import cqrslite.core.serialization.EventSerializerImpl
-import cqrslite.core.serialization.NoOpEventSerializer
+import cqrslite.core.serialization.SerializerThrowingOnFirstUse
+import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.*
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.context.annotation.*
 import org.springframework.core.type.AnnotatedTypeMetadata
 
-@Configuration
+@AutoConfiguration
 class CqrsConfig {
 
     @Bean
@@ -27,7 +28,7 @@ class CqrsConfig {
 
     @Bean
     @ConditionalOnMissingBean(EventSerializationMapConfig::class)
-    fun noOpSerializer(): EventSerializer = NoOpEventSerializer()
+    fun serializerNotConfigured(): EventSerializer = SerializerThrowingOnFirstUse()
 
     @Bean
     @Conditional(AggregateMapperEnabledCondition::class)
@@ -36,20 +37,29 @@ class CqrsConfig {
 
     @Bean
     @Conditional(AggregateMapperEnabledCondition::class)
-    fun lookup(cfg: ExternalIdToAggregateMapperConfig): ExternalIdToAggregateMapper = ExternalIdToAggregateMapper(cfg)
+    fun lookup(cfg: ExternalIdToAggregateMapperConfig): ExternalIdToAggregateMapper =
+        ExternalIdToAggregateMapperImpl(cfg)
 
     @Bean
-    fun eventStream(serializer: EventSerializer): EventStreamRecord = EventStreamRecord(serializer)
+    @ConditionalOnMissingBean
+    fun lookupNotConfigured(): ExternalIdToAggregateMapper = MapperThrowingOnFirstUse()
 
     @Bean
+    @ConditionalOnMissingBean
+    fun eventStreamRecord(serializer: EventSerializer): EventStreamRecord = EventStreamRecord(serializer)
+
+    @Bean
+    @ConditionalOnMissingBean
     fun outboxRecord(serializer: EventSerializer): OutboxRecord = OutboxRecord(serializer)
 
     @Bean
+    @ConditionalOnMissingBean
     fun eventStore(record: EventStreamRecord, outbox: Outbox, handlerHub: HandlerHub): PostgresEventStore =
         PostgresEventStore(record, outbox, handlerHub)
 
     @Bean
-    fun repository(eventStore: EventStore): Repository = Repository(eventStore)
+    @ConditionalOnMissingBean
+    fun repository(eventStore: EventStore): Repository = RepositoryImpl(eventStore)
 
     class AggregateMapperEnabledCondition : Condition {
         override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean {

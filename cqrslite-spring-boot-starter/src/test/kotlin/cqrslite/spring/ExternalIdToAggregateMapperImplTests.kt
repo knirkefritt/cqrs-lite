@@ -1,8 +1,8 @@
 package cqrslite.spring
 
 import cqrslite.core.AggregateRoot
-import cqrslite.core.ExternalIdToAggregateMapper
-import cqrslite.core.Repository
+import cqrslite.core.ExternalIdToAggregateMapperImpl
+import cqrslite.core.RepositoryImpl
 import cqrslite.core.SessionImpl
 import cqrslite.spring.harness.ContainerizedPostgresDatabase
 import cqrslite.spring.harness.TestContext
@@ -24,12 +24,12 @@ import javax.naming.ConfigurationException
 @ContextConfiguration(classes = [TestContext::class])
 @ActiveProfiles("test")
 @ExtendWith(ContainerizedPostgresDatabase::class)
-class ExternalIdToAggregateMapperTests {
+class ExternalIdToAggregateMapperImplTests {
     @Autowired
-    private lateinit var lookup: ExternalIdToAggregateMapper
+    private lateinit var lookup: ExternalIdToAggregateMapperImpl
 
     @Autowired
-    private lateinit var repository: Repository
+    private lateinit var repository: RepositoryImpl
 
     @Test
     fun get_or_create_aggregate_does_not_exist_returns_same_aggregate_on_both_invocations() {
@@ -186,7 +186,7 @@ class ExternalIdToAggregateMapperTests {
                         Hippo::class.java,
                     )
                     lookup.mapToAggregate(alreadyMappedId, hippoTwo.id, Hippo::class.java)
-                } catch (_: ExternalIdToAggregateMapper.AlreadyMappedToDifferentAggregate) {
+                } catch (_: ExternalIdToAggregateMapperImpl.AlreadyMappedToDifferentAggregate) {
                     handled = true
                 }
                 assert(handled)

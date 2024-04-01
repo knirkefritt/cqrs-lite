@@ -2,13 +2,12 @@ package cqrslite.spring.messaging
 
 import cqrslite.core.ConcurrencyException
 import cqrslite.core.messaging.*
-import cqrslite.spring.config.HandlerRegistry
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.springframework.context.ApplicationContext
 import java.lang.reflect.ParameterizedType
 import java.util.concurrent.ConcurrentHashMap
 
-class HandlerHubImpl(
+class SpringBeanHandlerHub(
     private val context: ApplicationContext,
     private val registry: HandlerRegistry,
 ) : HandlerHub {

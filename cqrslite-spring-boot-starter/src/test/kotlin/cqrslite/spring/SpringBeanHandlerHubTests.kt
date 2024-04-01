@@ -5,10 +5,10 @@ import cqrslite.core.messaging.CommandHandler
 import cqrslite.core.messaging.EventHandler
 import cqrslite.core.messaging.InProcess
 import cqrslite.core.messaging.TypeOfMessageHandling
-import cqrslite.spring.config.HandlerRegistry
 import cqrslite.spring.harness.ContainerizedPostgresDatabase
 import cqrslite.spring.harness.TestContext
-import cqrslite.spring.messaging.HandlerHubImpl
+import cqrslite.spring.messaging.HandlerRegistry
+import cqrslite.spring.messaging.SpringBeanHandlerHub
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -23,7 +23,7 @@ import java.util.*
 @ContextConfiguration(classes = [TestContext::class])
 @ActiveProfiles("test")
 @ExtendWith(ContainerizedPostgresDatabase::class)
-class HandlerHubImplTests {
+class SpringBeanHandlerHubTests {
 
     @Test
     fun `execute a command that resolves to a command handler, returns the command handler return value`() {
@@ -37,7 +37,7 @@ class HandlerHubImplTests {
         registry.eventHandlers = listOf()
         registry.commandHandlers = listOf(HandlerRegistry.HandlerBean(MyTestCommandHandler::class.java, "silly-bean"))
 
-        val handlerHub = HandlerHubImpl(context, registry)
+        val handlerHub = SpringBeanHandlerHub(context, registry)
 
         runBlocking {
             val response = handlerHub.executeCommand(TestCommand(), TestCommand::class.java, TestCommandResponse::class.java)
@@ -65,7 +65,7 @@ class HandlerHubImplTests {
             registry.eventHandlers = listOf(HandlerRegistry.HandlerBean(MyTestEventHandler::class.java, "silly-bean"))
             registry.commandHandlers = listOf()
 
-            val handlerHub = HandlerHubImpl(context, registry)
+            val handlerHub = SpringBeanHandlerHub(context, registry)
 
             handlerHub.runEventHandlers(TestEvent(), TestEvent::class.java)
             assert(handled)
@@ -92,7 +92,7 @@ class HandlerHubImplTests {
             registry.eventHandlers = listOf(HandlerRegistry.HandlerBean(InProcessTestHandler::class.java, "silly-bean"))
             registry.commandHandlers = listOf()
 
-            val handlerHub = HandlerHubImpl(context, registry)
+            val handlerHub = SpringBeanHandlerHub(context, registry)
 
             handlerHub.runEventHandlers(TestEvent(), TestEvent::class.java, whichHandlers = TypeOfMessageHandling.Default)
             assert(!handled)
@@ -112,7 +112,7 @@ class HandlerHubImplTests {
             on { commandHandlers } doReturn
                 listOf(HandlerRegistry.HandlerBean(MyTestCommandHandler::class.java, "silly-bean"))
         }
-        val handlerHub = HandlerHubImpl(context, registry)
+        val handlerHub = SpringBeanHandlerHub(context, registry)
 
         runBlocking {
             handlerHub.executeCommand(TestCommand(), TestCommand::class.java, TestCommandResponse::class.java)
@@ -135,7 +135,7 @@ class HandlerHubImplTests {
             on { eventHandlers } doReturn listOf(HandlerRegistry.HandlerBean(MyTestEventHandler::class.java, "silly-bean"))
             on { commandHandlers } doReturn listOf()
         }
-        val handlerHub = HandlerHubImpl(context, registry)
+        val handlerHub = SpringBeanHandlerHub(context, registry)
 
         runBlocking {
             handlerHub.runEventHandlers(TestEvent(), TestEvent::class.java)
@@ -168,7 +168,7 @@ class HandlerHubImplTests {
             registry.eventHandlers = listOf()
             registry.commandHandlers = listOf(HandlerRegistry.HandlerBean(MyTestCommandHandler::class.java, "silly-bean"))
 
-            val handlerHub = HandlerHubImpl(context, registry)
+            val handlerHub = SpringBeanHandlerHub(context, registry)
 
             val response = handlerHub.executeCommand(TestCommand(), TestCommand::class.java, TestCommandResponse::class.java)
             assert(response.text == "world")
@@ -199,7 +199,7 @@ class HandlerHubImplTests {
             registry.eventHandlers = listOf(HandlerRegistry.HandlerBean(MyTestEventHandler::class.java, "silly-bean"))
             registry.commandHandlers = listOf()
 
-            val handlerHub = HandlerHubImpl(context, registry)
+            val handlerHub = SpringBeanHandlerHub(context, registry)
 
             handlerHub.runEventHandlers(TestEvent(), TestEvent::class.java)
             assert(handled)

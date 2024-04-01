@@ -15,10 +15,10 @@ class SessionTests {
     @Test
     fun get_from_session_aggregate_does_not_exist_in_event_store_throws_correct_exception() {
         val eventStore = createInMemoryEventStore()
-        val session = SessionImpl(Repository(eventStore))
+        val session = SessionImpl(RepositoryImpl(eventStore))
 
         runBlocking {
-            assertThrows<Repository.AggregateNotFoundException> {
+            assertThrows<AggregateNotFoundException> {
                 session.get(
                     id = UUID(1, 1),
                     clazz = Order::class.java,
@@ -31,7 +31,7 @@ class SessionTests {
     fun get_from_session_aggregate_events_exist_in_event_store_returns_aggregate() {
         val id = UUID.randomUUID()
         val eventStore = createInMemoryEventStore(listOf(OrderHasBeenPlaced(id, version = 1, Instant.now())))
-        val session = SessionImpl(Repository(eventStore))
+        val session = SessionImpl(RepositoryImpl(eventStore))
 
         runBlocking {
             val aggregate = session.get(id = id, clazz = Order::class.java)
@@ -42,7 +42,7 @@ class SessionTests {
     @Test
     fun commit_session_tracks_new_aggregate_events_are_inserted_into_event_store() {
         val eventStore = createInMemoryEventStore()
-        val session = SessionImpl(Repository(eventStore))
+        val session = SessionImpl(RepositoryImpl(eventStore))
 
         runBlocking {
             val aggregate = Order(UUID.randomUUID())
