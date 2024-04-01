@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: demo-webflux
+
+  datasource:
+    default:
+      hikari:
+        jdbc-url: "jdbc:postgresql://localhost:5432/cqrs-samples"
+        driver-class-name: org.postgresql.Driver
+        username: test_user
+        password: test_user
+
+    flyway:
+      hikari:
+        jdbc-url: "jdbc:postgresql://localhost:5432/cqrs-samples"
+        driver-class-name: org.postgresql.Driver
+        username: sa
+        password: sa
+
+  flyway:
+    placeholders:
+      db_user: "test_user"
+
+cqrs:
+  serialization:
+    map:
+      knirkefritt.demowebflux.domain.SodaWasPurchased: soda_purchased
+
+  lookup:
+    schema: write
+    mappingTable: external_id_lookup
+    map:
+      knirkefritt.demowebflux.domain.VendingMachine: vending-machine
