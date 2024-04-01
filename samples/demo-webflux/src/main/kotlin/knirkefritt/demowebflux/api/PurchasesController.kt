@@ -15,15 +15,23 @@ class PurchasesController(
     @PutMapping("/purchase", consumes = ["application/json"])
     suspend fun purchase(@RequestBody body: PurchaseBody): ResponseEntity<Boolean> {
         val response = handlerHub.executeCommand(
-            PurchaseSodaCommand(body.location),
+            PurchaseSodaCommand(
+                body.location,
+                body.soda_brand
+            ),
             PurchaseSodaCommand::class.java,
             PurchaseSodaCommandResponse::class.java
         )
 
-        return ResponseEntity.ok().body(true)
+        return if (response.success) {
+            ResponseEntity.ok().body(true)
+        } else
+            ResponseEntity.badRequest().build()
     }
 
+    @Suppress("PropertyName")
     data class PurchaseBody(
         val location: String,
+        val soda_brand: String,
     )
 }

@@ -8,4 +8,5 @@ class SodaWasPurchased(
     override var id: UUID? = null,
     override var timestamp: Instant? = null,
     override var version: Int? = null,
+    val sodaBrand: String,
 ) : Event

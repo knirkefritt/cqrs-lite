@@ -13,9 +13,9 @@ class HandlePurchaseSoda(
         val session = SessionManager.session()
 
         val aggregate = mapper.getOrCreateAggregate(cmd.location, session, VendingMachine::class.java)
-        aggregate.purchaseSoda()
+        aggregate.purchaseSoda(cmd.sodaBrand)
 
         session.commit()
-        return PurchaseSodaCommandResponse()
+        return PurchaseSodaCommandResponse(success = true)
     }
 }

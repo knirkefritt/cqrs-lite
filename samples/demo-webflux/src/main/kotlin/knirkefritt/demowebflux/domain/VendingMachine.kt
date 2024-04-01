@@ -9,7 +9,7 @@ class VendingMachine() : AggregateRoot() {
         this.id = id
     }
 
-    fun purchaseSoda() {
-        applyChange(SodaWasPurchased())
+    fun purchaseSoda(sodaBrand: String) {
+        applyChange(SodaWasPurchased(sodaBrand = sodaBrand))
     }
 }
