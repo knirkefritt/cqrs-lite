@@ -1,41 +1,34 @@
-package cqrslite.spring.messaging
+package cqrslite.core.messaging
 
 import cqrslite.core.ConcurrencyException
-import cqrslite.core.messaging.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.springframework.context.ApplicationContext
 import java.lang.reflect.ParameterizedType
 import java.util.concurrent.ConcurrentHashMap
 
-class SpringBeanHandlerHub(
-    private val context: ApplicationContext,
+class HandlerHubImpl(
     private val registry: HandlerRegistry,
 ) : HandlerHub {
 
     data class CommandCacheEntry(val a: Class<*>, val b: Class<*>)
     data class EventCacheEntry(val handlingType: TypeOfMessageHandling, val eventType: Class<*>)
 
-    private val commandHandlerCache = ConcurrentHashMap<CommandCacheEntry, String>()
-    private val eventHandlerCache = ConcurrentHashMap<EventCacheEntry, List<HandlerRegistry.HandlerBean>>()
+    private val commandHandlerCache = ConcurrentHashMap<CommandCacheEntry, HandlerRegistry.MessageHandlerTemplate>()
+    private val eventHandlerCache = ConcurrentHashMap<EventCacheEntry, List<HandlerRegistry.MessageHandlerTemplate>>()
 
     override suspend fun <T, R> executeCommand(command: T, tClass: Class<T>, rClass: Class<R>): R {
         val key = CommandCacheEntry(tClass, rClass)
 
-        var beanName = commandHandlerCache[key]
+        var template = commandHandlerCache[key]
 
-        if (beanName == null) {
-            beanName = inspectBeansAndFindCommandHandler(tClass, rClass)
-            commandHandlerCache[key] = beanName
+        if (template == null) {
+            template = inspectBeansAndFindCommandHandler(tClass, rClass)
+            commandHandlerCache[key] = template
         }
 
         var attempt = 0
         while (true) {
             attempt++
-            val handler = context.getBean(beanName)
-                .let { h ->
-                    @Suppress("UNCHECKED_CAST")
-                    h as CommandHandler<T, R>
-                }
+            val handler = template.create<CommandHandler<T, R>>()
 
             val result = newSuspendedTransaction {
                 try {
@@ -57,29 +50,28 @@ class SpringBeanHandlerHub(
 
     override suspend fun <T> runEventHandlers(event: T, eClass: Class<T>, whichHandlers: TypeOfMessageHandling) {
         val key = EventCacheEntry(whichHandlers, eClass)
-        var handlerBeans = eventHandlerCache[key]
+        var templates = eventHandlerCache[key]
 
-        if (handlerBeans == null) {
-            handlerBeans = inspectBeansAndFindEventHandlers(eClass, whichHandlers)
-            eventHandlerCache[key] = handlerBeans
+        if (templates == null) {
+            templates = inspectBeansAndFindEventHandlers(eClass, whichHandlers)
+            eventHandlerCache[key] = templates
         }
 
-        if (handlerBeans.isEmpty()) {
+        if (templates.isEmpty()) {
             return
         }
 
-        runEventHandlers(handlerBeans, event)
+        runEventHandlers(templates, event)
     }
 
-    private suspend fun <T> runEventHandlers(handlerBeans: List<HandlerRegistry.HandlerBean>, event: T) {
+    private suspend fun <T> runEventHandlers(handlerBeans: List<HandlerRegistry.MessageHandlerTemplate>, event: T) {
         var attempt = 0
         while (true) {
             attempt++
             val completed = newSuspendedTransaction {
                 try {
                     handlerBeans.forEach { bean ->
-                        @Suppress("UNCHECKED_CAST")
-                        (context.getBean(bean.beanName) as EventHandler<T>).handle(event)
+                        bean.create<EventHandler<T>>().handle(event)
                     }
                     true
                 } catch (ex: ConcurrencyException) {
@@ -129,17 +121,16 @@ class SpringBeanHandlerHub(
                     resolveTypeOfMessageHandling(bean.clazz.kotlin) == whichHandlers
             }
 
-    private fun <R, T> inspectBeansAndFindCommandHandler(tClass: Class<T>, rClass: Class<R>): String {
-        val handlerBean = registry.commandHandlers
-            .single { bean ->
-                bean.clazz.genericInterfaces.firstOrNull { i ->
-                    i is ParameterizedType &&
-                        i.actualTypeArguments.size > 1 &&
-                        i.actualTypeArguments[0] == tClass &&
-                        i.actualTypeArguments[1] == rClass
-                } != null
-            }
-
-        return handlerBean.beanName
-    }
+    private fun <R, T> inspectBeansAndFindCommandHandler(
+        tClass: Class<T>,
+        rClass: Class<R>,
+    ): HandlerRegistry.MessageHandlerTemplate = registry.commandHandlers
+        .single { bean ->
+            bean.clazz.genericInterfaces.firstOrNull { i ->
+                i is ParameterizedType &&
+                    i.actualTypeArguments.size > 1 &&
+                    i.actualTypeArguments[0] == tClass &&
+                    i.actualTypeArguments[1] == rClass
+            } != null
+        }
 }

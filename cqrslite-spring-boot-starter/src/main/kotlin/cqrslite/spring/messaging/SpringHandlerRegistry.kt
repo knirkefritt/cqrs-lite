@@ -2,16 +2,29 @@ package cqrslite.spring.messaging
 
 import cqrslite.core.messaging.CommandHandler
 import cqrslite.core.messaging.EventHandler
+import cqrslite.core.messaging.HandlerRegistry
 import org.springframework.beans.BeansException
 import org.springframework.beans.factory.config.BeanDefinition
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
+import org.springframework.context.ApplicationContext
 
-class HandlerRegistry : BeanFactoryPostProcessor {
-    lateinit var commandHandlers: List<HandlerBean>
-    lateinit var eventHandlers: List<HandlerBean>
+/**
+ * An event-/command handler registry which finds all handlers registered as beans
+ */
+class SpringHandlerRegistry(
+    private var context: ApplicationContext,
+) : BeanFactoryPostProcessor, HandlerRegistry {
+    override lateinit var commandHandlers: List<HandlerRegistry.MessageHandlerTemplate>
+    override lateinit var eventHandlers: List<HandlerRegistry.MessageHandlerTemplate>
 
-    data class HandlerBean(val clazz: Class<*>, val beanName: String)
+    data class HandlerBean(override val clazz: Class<*>, val beanName: String, val context: ApplicationContext) :
+        HandlerRegistry.MessageHandlerTemplate {
+        override fun <T> create(): T {
+            @Suppress("UNCHECKED_CAST")
+            return context.getBean(beanName) as T
+        }
+    }
 
     @Throws(BeansException::class)
     override fun postProcessBeanFactory(beanFactory: ConfigurableListableBeanFactory) {
@@ -37,5 +50,5 @@ class HandlerRegistry : BeanFactoryPostProcessor {
             ?.let { Class.forName(beanDefinition.beanClassName) }
             ?.takeIf {
                 handlerType.isAssignableFrom(it)
-            }?.let { HandlerBean(it, beanName) }
+            }?.let { HandlerBean(it, beanName, this.context) }
 }
