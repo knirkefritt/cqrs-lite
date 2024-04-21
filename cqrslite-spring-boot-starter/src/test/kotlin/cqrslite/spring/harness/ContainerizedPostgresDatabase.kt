@@ -1,5 +1,7 @@
 package cqrslite.spring.harness
 
+import org.flywaydb.core.Flyway
+import org.jetbrains.exposed.sql.Database
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.Extension
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -16,6 +18,31 @@ class ContainerizedPostgresDatabase : Extension, BeforeAllCallback {
         init {
             postgres.withInitScript("init.sql")
         }
+
+        fun runFlyway() {
+            Database.connect(
+                url = flywayJdbcUrl(),
+                user = flywayUsername(),
+                password = flywayPassword(),
+            )
+
+            val flyway = Flyway
+                .configure()
+                .placeholders(mapOf("db_user" to System.getProperty("spring.datasource.default.hikari.username")))
+                .dataSource(
+                    flywayJdbcUrl(),
+                    flywayUsername(),
+                    flywayPassword(),
+                )
+                .schemas("flyway_versioning")
+                .load()
+
+            flyway.migrate()
+        }
+
+        private fun flywayUsername(): String = System.getProperty("spring.datasource.flyway.hikari.username")
+        private fun flywayPassword(): String = System.getProperty("spring.datasource.flyway.hikari.password")
+        private fun flywayJdbcUrl(): String = System.getProperty("spring.datasource.flyway.hikari.jdbc-url")
     }
 
     override fun beforeAll(context: ExtensionContext?) {

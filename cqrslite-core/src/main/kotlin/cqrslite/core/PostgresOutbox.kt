@@ -4,6 +4,7 @@ import cqrslite.core.messaging.HandlerHub
 import cqrslite.core.messaging.TypeOfMessageHandling
 import cqrslite.core.messaging.pubsub.EventBus
 import cqrslite.core.serialization.EventSerializer
+import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.IntegerColumnType
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.batchInsert
@@ -11,6 +12,7 @@ import org.jetbrains.exposed.sql.json.jsonb
 import org.jetbrains.exposed.sql.statements.StatementType
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.sql.ResultSet
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Picks messages from the outbox and passes them on to default event handlers.
@@ -43,7 +45,7 @@ class PostgresOutbox(
         }
     }
 
-    override suspend fun publish() {
+    override suspend fun publish(context: suspend() -> CoroutineContext) {
         var done = false
 
         fun collectResultSet(rs: ResultSet): List<Event> {
@@ -66,10 +68,12 @@ class PostgresOutbox(
                 )
 
                 payload?.run {
-                    handlerHub.runEventHandlers(
-                        this,
-                        whichHandlers = TypeOfMessageHandling.Default,
-                    )
+                    withContext(context()) {
+                        handlerHub.runEventHandlers(
+                            events = this@run,
+                            whichHandlers = TypeOfMessageHandling.Default,
+                        )
+                    }
 
                     eventBus.publish(this)
                 }

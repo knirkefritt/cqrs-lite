@@ -1,9 +1,6 @@
 package cqrslite.spring.config
 
-import cqrslite.core.Outbox
-import cqrslite.core.OutboxDisabled
-import cqrslite.core.OutboxRecord
-import cqrslite.core.PostgresOutbox
+import cqrslite.core.*
 import cqrslite.core.messaging.HandlerHub
 import cqrslite.core.messaging.pubsub.EventBus
 import cqrslite.spring.OutboxScheduledPoller
@@ -20,7 +17,7 @@ class OutboxConfig {
 
     @Bean
     @Conditional(SchedulingEnabledCondition::class)
-    fun scheduler(outbox: Outbox) = OutboxScheduledPoller(outbox)
+    fun scheduler(outbox: Outbox, repository: Repository) = OutboxScheduledPoller(outbox, repository)
 
     @Bean
     @ConditionalOnBean(OutboxScheduledPoller::class)
